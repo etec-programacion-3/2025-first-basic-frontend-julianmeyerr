@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Libreria</title>
+</head>
+<body>
+    <div>
+        <h1>Librería</h1>
+        <form id="formulario_libros">
+            <input type="text" id="titulo" placeholder="Título" required>
+            <input type="text" id="autor" placeholder="Autor" required>
+            <input type="number" id="anio" placeholder="Año" required>
+            <input type="text" id="genero" placeholder="Género" required>
+            <button type="submit">Agregar Libro</button>
+        </form>
+        <table id="tabla_libros">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Título</th>
+                    <th>Autor</th>
+                    <th>Año</th>
+                    <th>Género</th>
+                </tr>
+            </thead>
+            <tbody id="cuerpo_tabla"></tbody>
+        </table>
+        <div id="mensaje"></div>
+     </div>
+     <script>
+
+        const baseUrl = 'http://127.0.0.1:8000';
+        const formulario = document.getElementById("formulario_libros");
+        const tabla = document.getElementById("cuerpo_tabla");
+
+        const inputTitulo = document.getElementById("titulo");
+        const inputAutor = document.getElementById("autor");
+        const inputAnio = document.getElementById("anio");
+        const inputGenero = document.getElementById("genero");
+
+        const mensaje = document.getElementById("mensaje");
+
+        
+        function mostrarMensaje(texto){
+            mensaje.innerHTML = "<div>" + texto + "</div>";
+            setTimeout(() => mensaje.innerHTML = '', 3000);
+        }
+
+        async function cargarLibros(){
+            try {
+                const respuesta = await fetch(baseUrl);
+                const libros = await respuesta.json();
+                tabla.innerHTML = "";
+                libros.forEach(libro => {
+                    const tr = document.createElement("tr");
+                    tr.innerHTML = `
+                        <td>${libro.id}</td>
+                        <td>${libro.titulo}</td>
+                        <td>${libro.autor}</td>
+                        <td>${libro.anio}</td>
+                        <td>${libro.genero}</td>
+                        <td><button onclick="borrarLibro(${libro.id})">Borrar</button></td>
+                    `;
+                    tabla.appendChild(tr);
+                });
+            }
+            catch (error) {mostrarMensaje("Error al cargar los libros");}
+        }
+
+        formulario.onsubmit = async function (event) {
+            event.preventDefault();
+            const nuevo_libro = {
+                id: null,
+                titulo: inputTitulo.value.trim(),
+                autor: inputAutor.value.trim(),
+                anio: parseInt(inputAnio.value),
+                genero: inputGenero.value.trim()
+            }
+            try {
+                const respuesta = await fetch(baseUrl,{
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(nuevo_libro)
+                })
+                const libro = await respuesta.json();
+                mostrarMensaje("Libro agregado");
+                if (!respuesta.ok) throw new Error("Error al agregar el libro");
+                formulario.reset();
+                cargarLibros();
+            }
+            catch (error) {mostrarMensaje("Error al agregar el libro");}
+        }
+        
+        window.borrarLibro = async function (id){
+            if (!confirm("¿Borrar este libro?")) return;
+            try {
+                const respuesta = await fetch(`${baseUrl}/${id}`, {method: 'DELETE'});
+                if (!respuesta.ok) throw new Error("Error al borrar el libro");
+                mostrarMensaje("Libro borrado");
+                cargarLibros();
+            }
+            catch (error) {mostrarMensaje("Error al borrar el libro");}
+        }
+
+        cargarLibros();
+
+     </script>
+</body>
+
+        
+</html>
